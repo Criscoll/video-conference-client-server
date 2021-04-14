@@ -1,11 +1,14 @@
 import socket
+import sys
 
-HEADER = 64
-PORT = 5050
+SERVER = sys.argv[1]
+SERVER_PORT = int(sys.argv[2])
+UDP_PORT = int(sys.argv[3])
+ADDR = (SERVER, SERVER_PORT)
 FORMAT = "utf-8"
+HEADER = 64
 DISCONNECT_MESSAGE = "OUT"
-SERVER = socket.gethostbyname(socket.gethostname())
-ADDR = (SERVER, PORT)
+
 
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 client_socket.connect(ADDR)

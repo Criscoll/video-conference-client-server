@@ -1,12 +1,15 @@
 import socket
 import threading
+import sys
 
-HEADER = 64
-PORT = 5050
+PORT = int(sys.argv[1])
+CONSECUTIVE_FAILS = int(sys.argv[2])
 SERVER = socket.gethostbyname(socket.gethostname())
 ADDR = (SERVER, PORT)
 FORMAT = "utf-8"
 DISCONNECT_MESSAGE = "OUT"
+HEADER = 64
+
 
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server_socket.bind(ADDR)
