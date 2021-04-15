@@ -26,10 +26,33 @@ def connect():
 
 
 def login():
-    pass
+    try:
+        authenticated = False
+
+        while not authenticated:
+            server_msg = recieve(client)
+            send(client, input(server_msg))  # username
+            server_msg = recieve(client)
+            send(client, input(server_msg))  # password
+
+            server_msg = recieve(client)
+
+            if server_msg == AUTHENTICATED:
+                authenticated = True
+            elif server_msg == INCORRECT_CREDENTIALS:
+                print(server_msg)
+            elif server_msg == ATTEMPTS_EXCEEDED:
+                print(server_msg)
+                sys.exit(1)
+
+    except:
+        print("[ERR] Login Error")
+        sys.exit(1)
 
 
 connect()
+login()
+
 connected = True
 print(f"Connected successfully to [{SERVER}]")
 
