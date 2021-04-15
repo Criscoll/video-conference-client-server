@@ -1,5 +1,4 @@
-import socket
-import sys
+import socket, errno, sys
 from helpers import send, recieve
 from constants import *
 
@@ -57,11 +56,26 @@ connected = True
 print(f"Connected successfully to [{SERVER}]")
 
 while connected:
-    msg = input("Enter a message: ")
-    send(client, msg)
+    try:
+        if client.fileno() == -1:
+            print("[Connection Lost] Connection lost with server {SERVER}")
+            sys.exit(1)
 
-    if msg == DISCONNECT_MESSAGE:
-        connected = False
+        msg = input("Enter a message: ")
+        send(client, msg)
+
+        if msg == DISCONNECT_MESSAGE:
+            connected = False
+    except socket.error as e:
+        if isinstance(e.args, tuple):
+            print(f"[Err] {e}")
+            if e.errno == errno.EPIPE:
+                print("[Err] Server disconnected remotely")
+                sys.exit(1)
+        else:
+            print("Unknown error")
+            sys.exit(1)
+
 
 print(f"Disconnected from server [{SERVER}]")
 
