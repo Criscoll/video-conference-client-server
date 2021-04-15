@@ -1,4 +1,4 @@
-from constants import HEADER, FORMAT
+from constants import HEADER, FORMAT, DISCONNECTED
 
 
 def recieve(conn):
@@ -9,7 +9,7 @@ def recieve(conn):
         msg = conn.recv(msg_length).decode(FORMAT)
         return msg
     else:
-        return "No message received"
+        return DISCONNECTED
 
 
 def send(socket, msg):

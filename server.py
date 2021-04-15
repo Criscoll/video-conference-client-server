@@ -13,7 +13,6 @@ ADDR = (SERVER, PORT)
 
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-server_socket.bind(ADDR)
 
 
 def handle_authentication(conn):
@@ -48,9 +47,14 @@ def handle_client(conn, addr):
     connected = True
     while connected:
         msg = recieve(conn)
-        print(f"[{addr}] {msg}")
-        if msg == DISCONNECT_MESSAGE:
+
+        if msg == DISCONNECTED:
+            print(f"[Connection Lost] Connection was lost with {addr}")
+            conn.close()
+            return
+        elif msg == DISCONNECT_MESSAGE:
             connected = False
+        print(f"[{addr}] {msg}")
 
     print(f"[DISCONNECTED] {addr}")
     conn.close()
@@ -58,13 +62,19 @@ def handle_client(conn, addr):
 
 
 def start():
-    server_socket.listen()
-    print(f"[LISTENING] Server is listening on {SERVER}")
-    while True:
-        conn, addr = server_socket.accept()
-        thread = threading.Thread(target=handle_client, args=(conn, addr))
-        thread.start()
-        print(f"[ACTIVE CONNECTIONS] {threading.activeCount() - 1}")
+    try:
+        server_socket.bind(ADDR)
+        server_socket.listen()
+
+        print(f"[LISTENING] Server is listening on {SERVER}")
+        while True:
+            conn, addr = server_socket.accept()
+            thread = threading.Thread(target=handle_client, args=(conn, addr))
+            thread.start()
+            print(f"[ACTIVE CONNECTIONS] {threading.activeCount() - 1}")
+    except socket.error:
+        print("[Err] Failed to start the server")
+        sys.exit(1)
 
 
 print("[STARTING] server is starting...")
