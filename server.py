@@ -1,36 +1,45 @@
 import socket
 import threading
 import sys
+from helpers import send, recieve
+from constants import *
 
 PORT = int(sys.argv[1])
 CONSECUTIVE_FAILS = int(sys.argv[2])
+
 SERVER = socket.gethostbyname(socket.gethostname())
 ADDR = (SERVER, PORT)
-FORMAT = "utf-8"
-DISCONNECT_MESSAGE = "OUT"
-HEADER = 64
 
 
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server_socket.bind(ADDR)
 
 
+def handle_authentication(conn):
+    attempts = 0
+    authenticated = False
+
+    while not authenticated:
+
+        username = input("[Authentication] Please enter your username: ")
+        password = input("[Authentication] Please enter your password: ")
+
+
 def handle_client(conn, addr):
+
     print(f"[NEW CONNECTION] {addr} connected.")
 
     connected = True
     while connected:
-        msg_length = conn.recv(HEADER).decode(FORMAT)
-        if msg_length:
-            msg_length = int(msg_length)
-            msg = conn.recv(msg_length).decode(FORMAT)
+        msg = recieve(conn)
+        print(f"[{addr}] {msg}")
 
-            if msg == DISCONNECT_MESSAGE:
-                connected = False
+        if msg == DISCONNECT_MESSAGE:
+            connected = False
 
-            print(f"[{addr}] {msg}")
-
+    print(f"[DISCONNECTED] {addr}")
     conn.close()
+    print(f"[ACTIVE CONNECTIONS] {threading.activeCount() - 2}")
 
 
 def start():
