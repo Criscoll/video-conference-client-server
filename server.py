@@ -13,6 +13,15 @@ server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
 
 def handle_authentication(conn):
+    def verify_credentials(username, password):
+        with open("credentials.txt", "r") as f:
+            for line in f:
+                u_name, p_word = line.split(" ")
+                if username == u_name and password == p_word.rstrip():
+                    return True
+
+        return False
+
     attempts = 0
     authenticated = False
 
@@ -22,7 +31,7 @@ def handle_authentication(conn):
         send(conn, "[Authentication] Please enter your password: ")
         password = recieve(conn)
 
-        if username == "user" and password == "password":
+        if verify_credentials(username, password):
             send(conn, AUTHENTICATED)
             return True
 
@@ -39,32 +48,32 @@ def handle_client(conn, addr):
 
     if handle_authentication(conn) == False:
         conn.close()
+    else:
+        print(f"[NEW CONNECTION] {addr} connected.")
+        connected = True
+        while connected:
+            try:
+                msg = recieve(conn)
 
-    print(f"[NEW CONNECTION] {addr} connected.")
-    connected = True
-    while connected:
-        try:
-            msg = recieve(conn)
+                if msg == DISCONNECTED:
+                    print("[Disconnected] Client disconnected remotely")
+                    conn.close()
+                    return
 
-            if msg == DISCONNECTED:
-                print("[Disconnected] Client disconnected remotely")
-                conn.close()
-                return
+                if msg == DISCONNECT_MESSAGE:
+                    connected = False
 
-            if msg == DISCONNECT_MESSAGE:
-                connected = False
+                print(f"[{addr}] {msg}")
 
-            print(f"[{addr}] {msg}")
-
-        except socket.error as e:
-            if isinstance(e.args, tuple):
-                print(f"[Err] {e}")
-                if e.errno == errno.EPIPE:
-                    print("[Err] Client disconnected remotely")
+            except socket.error as e:
+                if isinstance(e.args, tuple):
+                    print(f"[Err] {e}")
+                    if e.errno == errno.EPIPE:
+                        print("[Err] Client disconnected remotely")
+                        sys.exit(1)
+                else:
+                    print("Unknown error")
                     sys.exit(1)
-            else:
-                print("Unknown error")
-                sys.exit(1)
 
     print(f"[DISCONNECTED] {addr}")
     conn.close()
