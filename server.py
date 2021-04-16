@@ -1,17 +1,20 @@
 import socket, threading, sys, time, errno
-from helpers import send, recieve
+from helpers import send, recieve, get_formatted_date
 from constants import *
 
-PORT = int(sys.argv[1])
-CONSECUTIVE_FAILS = int(sys.argv[2])
+PORT = int(sys.argv[1])  # PORT number
+CONSECUTIVE_FAILS = int(sys.argv[2])  # Number of allowed fails during authentication
 
-SERVER = socket.gethostbyname(socket.gethostname())
-ADDR = (SERVER, PORT)
+SERVER = socket.gethostbyname(socket.gethostname())  # The IP address of the server
+ADDR = (SERVER, PORT)  # The endpoint of the server
 
-server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # The server socket
 server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
 
+# handle_authentication: prompt client for username and password and verify whether
+# these match with any entries in credentials.txt
 def handle_authentication(conn):
     def verify_credentials(username, password):
         with open("credentials.txt", "r") as f:
@@ -44,11 +47,27 @@ def handle_authentication(conn):
         send(conn, INCORRECT_CREDENTIALS)
 
 
-def handle_client(conn, addr):
+# handle_client: the moment as client establishes a connection with the server, the server hands
+# off the client to their own thread where any interaction with the server is handled.
+# This should handle any asynchronous behaviour as each client is essentially handed their
+# own little environment to make requests within. Most client handling is done here
+def handle_client(conn, addr, seq_no, lock):
+    # when a user is authenticated, log their info in userlog.txt
+    def log_user_activity():
+        lock.acquire()
+        with open("userlog.txt", "a") as wf:
+            date = get_formatted_date()
+            wf.write(f"{seq_no}; {date}; {addr};\n")
+        lock.release()
 
+    # perform authenticaiton and reject client is they fail
+    # Upon failure, the client must wait 10 seconds before re-attempting
     if handle_authentication(conn) == False:
         conn.close()
+
+    # client is authenticated and may begin interacting with the server
     else:
+        log_user_activity()
         print(f"[NEW CONNECTION] {addr} connected.")
         connected = True
         while connected:
@@ -80,6 +99,8 @@ def handle_client(conn, addr):
     print(f"[ACTIVE CONNECTIONS] {threading.activeCount() - 2}")
 
 
+# start: starts running the server and keeps it listening for new incomming connections.
+# any new connections are given their own thread and handed off to handle_client()
 def start():
     try:
         server_socket.bind(ADDR)
@@ -88,7 +109,11 @@ def start():
         print(f"[LISTENING] Server is listening on {SERVER}")
         while True:
             conn, addr = server_socket.accept()
-            thread = threading.Thread(target=handle_client, args=(conn, addr))
+            lock = threading.Lock()
+            seq_no = threading.activeCount() - 1
+            thread = threading.Thread(
+                target=handle_client, args=(conn, addr, seq_no, lock)
+            )
             thread.start()
             print(f"[ACTIVE CONNECTIONS] {threading.activeCount() - 1}")
     except socket.error:
@@ -96,6 +121,7 @@ def start():
         sys.exit(1)
 
 
+# main: entry point of the program
 print("[STARTING] server is starting...")
 start()
 

@@ -1,10 +1,8 @@
 # this file is just used to pickle my data structures into a txt file
 # this should be deleted prior to submitting
+import datetime
+from helpers import get_formatted_date
 
-import pickle
 
-with open("credentials.txt", "r") as f:
-
-    for line in f:
-        print(line.split(" ")[0])
+print(get_formatted_date())
 

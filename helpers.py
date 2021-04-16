@@ -1,3 +1,4 @@
+import datetime
 from constants import HEADER, FORMAT, DISCONNECTED
 
 
@@ -19,3 +20,15 @@ def send(socket, msg):
     send_length += b" " * (HEADER - len(send_length))
     socket.send(send_length)
     socket.send(message)
+
+
+def get_formatted_date():
+    date_obj = datetime.datetime.now()
+
+    month, day, year = date_obj.strftime("%x").split("/")
+    month = date_obj.strftime("%b")
+    time = date_obj.strftime("%X")
+
+    formatted_date = f"{day} {month} {year} {time}"
+
+    return formatted_date
