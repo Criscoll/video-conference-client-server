@@ -1,5 +1,12 @@
 import socket, threading, sys, time, errno
-from helpers import send, recieve, get_formatted_date
+from helpers import (
+    send,
+    recieve,
+    get_formatted_date,
+    get_blocked_timestamps,
+    update_blocked_timestamps,
+    get_time_since,
+)
 from constants import *
 
 PORT = int(sys.argv[1])  # PORT number
@@ -27,12 +34,18 @@ def handle_authentication(conn):
 
     attempts = 0
     authenticated = False
+    time_blocked_map = get_blocked_timestamps()
 
     while not authenticated:
         send(conn, "[Authentication] Please enter your username: ")
         username = recieve(conn)
         send(conn, "[Authentication] Please enter your password: ")
         password = recieve(conn)
+
+        if username in time_blocked_map:
+            if get_time_since(time_blocked_map[username]) <= 10:
+                send(conn, BLOCKED)
+                return False
 
         if verify_credentials(username, password):
             send(conn, AUTHENTICATED)
@@ -41,6 +54,8 @@ def handle_authentication(conn):
         attempts += 1
 
         if attempts == CONSECUTIVE_FAILS:
+            update_blocked_timestamps(time_blocked_map)
+
             send(conn, ATTEMPTS_EXCEEDED)
             return False
 
@@ -53,11 +68,11 @@ def handle_authentication(conn):
 # own little environment to make requests within. Most client handling is done here
 def handle_client(conn, addr, seq_no, lock):
     # when a user is authenticated, log their info in userlog.txt
-    def log_user_activity():
+    def log_user_activity(udp_port):
         lock.acquire()
         with open("userlog.txt", "a") as wf:
             date = get_formatted_date()
-            wf.write(f"{seq_no}; {date}; {addr};\n")
+            wf.write(f"{seq_no}; {date}; {addr[0]}; {udp_port}\n")
         lock.release()
 
     # perform authenticaiton and reject client is they fail
@@ -67,7 +82,9 @@ def handle_client(conn, addr, seq_no, lock):
 
     # client is authenticated and may begin interacting with the server
     else:
-        log_user_activity()
+        udp_port = recieve(conn)
+
+        log_user_activity(udp_port)
         print(f"[NEW CONNECTION] {addr} connected.")
         connected = True
         while connected:

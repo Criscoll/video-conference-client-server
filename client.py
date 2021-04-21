@@ -53,6 +53,7 @@ connect()
 login()
 
 connected = True
+send(client, str(UDP_PORT))
 print(f"Connected successfully to [{SERVER}]")
 
 while connected:
@@ -61,7 +62,9 @@ while connected:
             print("[Connection Lost] Connection lost with server {SERVER}")
             sys.exit(1)
 
-        msg = input("Enter a message: ")
+        msg = input(
+            "Enter one of the following commands (MSG, DLT, EDT, RDM, ATU, OUT): "
+        )
         send(client, msg)
 
         if msg == DISCONNECT_MESSAGE:

@@ -10,3 +10,6 @@ ATTEMPTS_EXCEEDED = "[Authentication] Too many attempts made, please try again l
 INCORRECT_CREDENTIALS = (
     "[Authentication] Incorrect username or password, please try again..."
 )
+
+
+BLOCKED = "[Authentication] Your account is blocked due to multiple login failures. Please try again later"
