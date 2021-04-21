@@ -72,9 +72,16 @@ while connected:
             "Enter one of the following commands (MSG, DLT, EDT, RDM, ATU, OUT): "
         )
         send(client, msg)
+        server_msg = recieve(client)
 
-        if msg == DISCONNECT_MESSAGE:
+        if server_msg == INVALID_COMMAND:
+            print(server_msg)
+        elif server_msg == ACKNOWLEDGEMENT:
+            pass
+
+        if msg == Commands.OUT.value:
             connected = False
+
     except socket.error as e:
         if isinstance(e.args, tuple):
             print(f"[Err] {e}")

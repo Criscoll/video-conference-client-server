@@ -2,13 +2,8 @@
 # this should be deleted prior to submitting
 import datetime
 from helpers import *
+from constants import *
 import pickle
 
-
-a = get_blocked_timestamps()
-
-
-print(a)
-
-print(get_time_since(a["127.0.0.1"]))
+print(Commands.OUT.value)
 

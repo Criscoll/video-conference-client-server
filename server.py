@@ -83,23 +83,40 @@ def handle_client(conn, addr, seq_no, lock):
     # client is authenticated and may begin interacting with the server
     else:
         udp_port = recieve(conn)
-
         log_user_activity(udp_port)
+
         print(f"[NEW CONNECTION] {addr} connected.")
+
         connected = True
         while connected:
             try:
                 msg = recieve(conn)
+                print(f"[{addr}] {msg}")
 
                 if msg == DISCONNECTED:
                     print("[Disconnected] Client disconnected remotely")
                     conn.close()
                     return
 
-                if msg == DISCONNECT_MESSAGE:
-                    connected = False
+                (command, *args) = msg.split(" ")
 
-                print(f"[{addr}] {msg}")
+                if command not in Commands.__members__:
+                    send(conn, INVALID_COMMAND)
+                elif command == Commands.MSG.value:
+                    pass
+                elif command == Commands.DLT.value:
+                    pass
+                elif command == Commands.EDT.value:
+                    pass
+                elif command == Commands.RDM.value:
+                    pass
+                elif command == Commands.ATU.value:
+                    pass
+                elif command == Commands.OUT.value:
+                    send(conn, ACKNOWLEDGEMENT)
+                    connected = False
+                elif command == Commands.UDP.value:
+                    pass
 
             except socket.error as e:
                 if isinstance(e.args, tuple):
