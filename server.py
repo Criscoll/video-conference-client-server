@@ -6,6 +6,8 @@ from helpers import (
     get_blocked_timestamps,
     update_blocked_timestamps,
     get_time_since,
+    next_message_no,
+    log_message,
 )
 from constants import *
 
@@ -39,7 +41,7 @@ def handle_authentication(conn, addr):
 
     if addr[0] in time_blocked_map and get_time_since(time_blocked_map[addr[0]]) <= 10:
         send(conn, BLOCKED)
-        return False
+        return None
     else:
         send(conn, REQUEST_AUTHENTICATION)
         while not authenticated:
@@ -50,14 +52,14 @@ def handle_authentication(conn, addr):
 
             if verify_credentials(username, password):
                 send(conn, AUTHENTICATED)
-                return True
+                return username
 
             attempts += 1
 
             if attempts == CONSECUTIVE_FAILS:
                 update_blocked_timestamps(time_blocked_map, addr[0])
                 send(conn, ATTEMPTS_EXCEEDED)
-                return False
+                return None
 
             send(conn, INCORRECT_CREDENTIALS)
 
@@ -75,9 +77,36 @@ def handle_client(conn, addr, seq_no, lock):
             wf.write(f"{seq_no}; {date}; {addr[0]}; {udp_port}\n")
         lock.release()
 
+    def handle_msg_command(username, args):
+        msg = " ".join(args)
+        msg_no = next_message_no()
+        date = get_formatted_date()
+        lock.acquire()
+        log_message(msg_no, date, username, msg, "no")
+        lock.release()
+
+        print(f'{username} posted MSG #{msg_no} "{msg}" at {date}.')
+
+        send(conn, f"Message #{msg_no} posted at {date}.")
+
+    def handle_rdm_command():
+        pass
+
+    def handle_dlt_command():
+        pass
+
+    def handle_edt_command():
+        pass
+
+    def handle_atu_command():
+        pass
+
     # perform authenticaiton and reject client is they fail
     # Upon failure, the client must wait 10 seconds before re-attempting
-    if handle_authentication(conn, addr) == False:
+    username = handle_authentication(conn, addr)
+    authenticated = True if username else False
+
+    if not authenticated:
         pass
 
     # client is authenticated and may begin interacting with the server
@@ -98,12 +127,15 @@ def handle_client(conn, addr, seq_no, lock):
                     conn.close()
                     return
 
-                (command, *args) = msg.split(" ")
+                (command, *args) = msg.strip().split(" ")
 
                 if command not in Commands.__members__:
                     send(conn, INVALID_COMMAND)
                 elif command == Commands.MSG.value:
-                    pass
+                    if len(args) == 0:
+                        send(conn, MISSING_ARGUMENTS)
+                    else:
+                        handle_msg_command(username, args)
                 elif command == Commands.DLT.value:
                     pass
                 elif command == Commands.EDT.value:

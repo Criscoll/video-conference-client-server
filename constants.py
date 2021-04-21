@@ -36,3 +36,4 @@ ACKNOWLEDGEMENT = "OK"
 INVALID_COMMAND = (
     "[Invalid Input] Please begin your message with one of the outlined commands"
 )
+MISSING_ARGUMENTS = "[Invalid Input] Please include an argument in your MSG command"

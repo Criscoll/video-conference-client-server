@@ -74,10 +74,7 @@ while connected:
         send(client, msg)
         server_msg = recieve(client)
 
-        if server_msg == INVALID_COMMAND:
-            print(server_msg)
-        elif server_msg == ACKNOWLEDGEMENT:
-            pass
+        print(server_msg)
 
         if msg == Commands.OUT.value:
             connected = False

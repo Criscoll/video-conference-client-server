@@ -66,3 +66,29 @@ def update_blocked_timestamps(time_blocked_map, ip):
         except EOFError as e:
             print(f"[Pickle Error] Could not update blocked timestamps - {e}")
 
+
+def next_message_no():
+    try:
+        last_msg_no = 1
+        with open("messagelog.txt", "a+") as f:
+            f.seek(0)
+
+            for last_line in f:
+                pass
+
+            last_msg_no = last_line.split(" ")[0].strip(";")
+            last_msg_no = str(int(last_msg_no) + 1)
+
+    except FileNotFoundError as e:
+        print(f"[File Err] Could not find the messagelog.txt")
+        last_msg_no = 1
+    finally:
+        return last_msg_no
+
+
+def log_message(msg_no, date, username, msg, edited):
+    try:
+        with open("messagelog.txt", "a+") as wf:
+            wf.write(f"{msg_no}; {date}; {username}; {msg}; {edited}\n")
+    except FileNotFoundError as e:
+        print(f"[File Err] Could not find the messagelog.txt")

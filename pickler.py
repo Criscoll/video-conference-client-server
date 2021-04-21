@@ -5,5 +5,5 @@ from helpers import *
 from constants import *
 import pickle
 
-print(Commands.OUT.value)
+print(next_message_no())
 
