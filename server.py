@@ -1,4 +1,4 @@
-import socket, threading, sys, time, errno
+import socket, threading, sys, time, errno, pickle
 from helpers import (
     send,
     recieve,
@@ -8,6 +8,7 @@ from helpers import (
     get_time_since,
 )
 from constants import *
+
 
 PORT = int(sys.argv[1])  # PORT number
 CONSECUTIVE_FAILS = int(sys.argv[2])  # Number of allowed fails during authentication
@@ -22,7 +23,7 @@ server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
 # handle_authentication: prompt client for username and password and verify whether
 # these match with any entries in credentials.txt
-def handle_authentication(conn):
+def handle_authentication(conn, addr):
     def verify_credentials(username, password):
         with open("credentials.txt", "r") as f:
             for line in f:
@@ -36,30 +37,29 @@ def handle_authentication(conn):
     authenticated = False
     time_blocked_map = get_blocked_timestamps()
 
-    while not authenticated:
-        send(conn, "[Authentication] Please enter your username: ")
-        username = recieve(conn)
-        send(conn, "[Authentication] Please enter your password: ")
-        password = recieve(conn)
+    if addr[0] in time_blocked_map and get_time_since(time_blocked_map[addr[0]]) <= 10:
+        send(conn, BLOCKED)
+        return False
+    else:
+        send(conn, REQUEST_AUTHENTICATION)
+        while not authenticated:
+            send(conn, "[Authentication] Please enter your username: ")
+            username = recieve(conn)
+            send(conn, "[Authentication] Please enter your password: ")
+            password = recieve(conn)
 
-        if username in time_blocked_map:
-            if get_time_since(time_blocked_map[username]) <= 10:
-                send(conn, BLOCKED)
+            if verify_credentials(username, password):
+                send(conn, AUTHENTICATED)
+                return True
+
+            attempts += 1
+
+            if attempts == CONSECUTIVE_FAILS:
+                update_blocked_timestamps(time_blocked_map, addr[0])
+                send(conn, ATTEMPTS_EXCEEDED)
                 return False
 
-        if verify_credentials(username, password):
-            send(conn, AUTHENTICATED)
-            return True
-
-        attempts += 1
-
-        if attempts == CONSECUTIVE_FAILS:
-            update_blocked_timestamps(time_blocked_map)
-
-            send(conn, ATTEMPTS_EXCEEDED)
-            return False
-
-        send(conn, INCORRECT_CREDENTIALS)
+            send(conn, INCORRECT_CREDENTIALS)
 
 
 # handle_client: the moment as client establishes a connection with the server, the server hands
@@ -77,8 +77,8 @@ def handle_client(conn, addr, seq_no, lock):
 
     # perform authenticaiton and reject client is they fail
     # Upon failure, the client must wait 10 seconds before re-attempting
-    if handle_authentication(conn) == False:
-        conn.close()
+    if handle_authentication(conn, addr) == False:
+        pass
 
     # client is authenticated and may begin interacting with the server
     else:

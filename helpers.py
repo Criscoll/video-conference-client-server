@@ -1,5 +1,6 @@
 import datetime
 from constants import HEADER, FORMAT, DISCONNECTED
+import pickle
 
 
 def recieve(conn):
@@ -43,9 +44,11 @@ def get_time_since(date):
 def get_blocked_timestamps():
     with open("blocked_timestamps.pickle", "a+b") as pickle_in:
         try:
+            pickle_in.seek(0)
+            time_blocked_map = {}
             time_blocked_map = pickle.load(pickle_in)
         except EOFError as e:
-            print(e)
+            print(f"[Pickle Error] pickle file is empty, returning empty dict ")
             time_blocked_map = {}
         finally:
             return time_blocked_map
@@ -53,10 +56,13 @@ def get_blocked_timestamps():
     return {}
 
 
-def update_blocked_timestamps(time_blocked_map):
-    with open("blocked_timestamps.pickle", "a+b") as pickle_out:
+def update_blocked_timestamps(time_blocked_map, ip):
+    with open("blocked_timestamps.pickle", "wb+") as pickle_out:
         try:
-            pickle.dump(a, time_blocked_map)
+            date_obj = datetime.datetime.now()
+            time_blocked_map[ip] = date_obj
+            pickle.dump(time_blocked_map, pickle_out)
+            print(f"[Pickle] Successfully pickled timestamp of blocked user - {ip}")
         except EOFError as e:
-            print(e)
+            print(f"[Pickle Error] Could not update blocked timestamps - {e}")
 

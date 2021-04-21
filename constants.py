@@ -13,3 +13,4 @@ INCORRECT_CREDENTIALS = (
 
 
 BLOCKED = "[Authentication] Your account is blocked due to multiple login failures. Please try again later"
+REQUEST_AUTHENTICATION = "[Authentication] Authentication required..."

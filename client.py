@@ -27,22 +27,28 @@ def connect():
 def login():
     try:
         authenticated = False
+        server_msg = recieve(client)
 
-        while not authenticated:
-            server_msg = recieve(client)
-            send(client, input(server_msg))  # username
-            server_msg = recieve(client)
-            send(client, input(server_msg))  # password
+        if server_msg == BLOCKED:
+            print(server_msg)
+            sys.exit(1)
+        else:
+            print(server_msg)
+            while not authenticated:
+                server_msg = recieve(client)
+                send(client, input(server_msg))  # username
+                server_msg = recieve(client)
+                send(client, input(server_msg))  # password
 
-            server_msg = recieve(client)
+                server_msg = recieve(client)
 
-            if server_msg == AUTHENTICATED:
-                authenticated = True
-            elif server_msg == INCORRECT_CREDENTIALS:
-                print(server_msg)
-            elif server_msg == ATTEMPTS_EXCEEDED:
-                print(server_msg)
-                sys.exit(1)
+                if server_msg == AUTHENTICATED:
+                    authenticated = True
+                elif server_msg == INCORRECT_CREDENTIALS:
+                    print(server_msg)
+                elif server_msg == ATTEMPTS_EXCEEDED:
+                    print(server_msg)
+                    sys.exit(1)
 
     except:
         print("[ERR] Login Error")
