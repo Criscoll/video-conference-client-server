@@ -10,6 +10,7 @@ from helpers import (
     log_message,
     delete_message,
     edit_message,
+    read_messages,
 )
 from constants import *
 
@@ -131,8 +132,13 @@ def handle_client(conn, addr, seq_no, lock):
         else:
             send(conn, f"Message #{msg_no} edited at {get_formatted_date()}")
 
-    def handle_rdm_command():
-        pass
+    def handle_rdm_command(args):
+        if len(args) == 0:
+            send(conn, MISSING_ARGUMENTS)
+            return
+
+        timestamp = " ".join(args)
+        result = read_messages(timestamp)
 
     def handle_atu_command():
         pass
@@ -174,7 +180,7 @@ def handle_client(conn, addr, seq_no, lock):
                 elif command == Commands.EDT.value:
                     handle_edt_command(username, args)
                 elif command == Commands.RDM.value:
-                    pass
+                    handle_rdm_command(args)
                 elif command == Commands.ATU.value:
                     pass
                 elif command == Commands.OUT.value:

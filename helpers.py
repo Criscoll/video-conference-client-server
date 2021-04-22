@@ -24,6 +24,10 @@ def get_time_since(date):
     return (date_obj - date).total_seconds()
 
 
+def is_later_than(formatted_date_1, formatted_date_2): 
+
+
+
 # ------------------ TCP Transmission --------------------
 
 
@@ -184,6 +188,33 @@ def edit_message(msg_no, timestamp, new_msg, username):
                     )
                 else:
                     file_lines.append(line)
+
+            if line_found == False:
+                return MSG_NOT_FOUND
+            else:
+                f.seek(0)
+                f.truncate(0)
+                for line in file_lines:
+                    f.write(line)
+
+                return SUCCESS
+
+    except FileNotFoundError:
+        print(f"[File Err] Could not find the messagelog.txt")
+
+
+# ------------------ RDM Command --------------------
+def read_messages(timestamp):
+    try:
+        with open("messagelog.txt", "r") as f:
+            f.seek(0)
+            messages = []
+
+            # fine the line being referenced, delete it and move all subsequent elements up
+            for line in f:
+                time = line.split(";")[1:5]
+
+                if 
 
             if line_found == False:
                 return MSG_NOT_FOUND

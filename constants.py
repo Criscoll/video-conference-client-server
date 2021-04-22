@@ -38,4 +38,5 @@ SUCCESS = "Command Successfully run"
 # ------------------ DLT Command --------------------
 MSG_NOT_FOUND = "[Command Err] Unable to find the specified message in the logs"
 
-# ------------------ DLT Command --------------------
+# ------------------ RDM Command --------------------
+NO_NEW_MSG = "[RDM] There are no new messages after this timestamp"
