@@ -5,5 +5,4 @@ from helpers import *
 from constants import *
 import pickle
 
-print(next_message_no())
-
+delete_message("1", "21 Apr 21 22:00:04", "yoda")

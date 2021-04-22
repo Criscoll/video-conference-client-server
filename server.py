@@ -8,6 +8,7 @@ from helpers import (
     get_time_since,
     next_message_no,
     log_message,
+    delete_message,
 )
 from constants import *
 
@@ -78,6 +79,10 @@ def handle_client(conn, addr, seq_no, lock):
         lock.release()
 
     def handle_msg_command(username, args):
+        if len(args) == 0:
+            send(conn, MISSING_ARGUMENTS)
+            return
+
         msg = " ".join(args)
         msg_no = next_message_no()
         date = get_formatted_date()
@@ -89,10 +94,27 @@ def handle_client(conn, addr, seq_no, lock):
 
         send(conn, f"Message #{msg_no} posted at {date}.")
 
-    def handle_rdm_command():
-        pass
+    def handle_dlt_command(username, args):
+        if len(args) == 0:
+            send(conn, MISSING_ARGUMENTS)
+            return
 
-    def handle_dlt_command():
+        msg_no = args[0].strip("#")
+        args.pop(0)
+        timestamp = " ".join(args)
+
+        print(f"{msg_no} - {timestamp} - {username}")
+
+        lock.acquire()
+        result = delete_message(msg_no, timestamp, username)
+        lock.release()
+
+        if result == MSG_NOT_FOUND:
+            send(conn, MSG_NOT_FOUND)
+        else:
+            send(conn, f"Message {msg_no} deleted at {get_formatted_date()}")
+
+    def handle_rdm_command():
         pass
 
     def handle_edt_command():
@@ -132,12 +154,9 @@ def handle_client(conn, addr, seq_no, lock):
                 if command not in Commands.__members__:
                     send(conn, INVALID_COMMAND)
                 elif command == Commands.MSG.value:
-                    if len(args) == 0:
-                        send(conn, MISSING_ARGUMENTS)
-                    else:
-                        handle_msg_command(username, args)
+                    handle_msg_command(username, args)
                 elif command == Commands.DLT.value:
-                    pass
+                    handle_dlt_command(username, args)
                 elif command == Commands.EDT.value:
                     pass
                 elif command == Commands.RDM.value:
@@ -145,7 +164,7 @@ def handle_client(conn, addr, seq_no, lock):
                 elif command == Commands.ATU.value:
                     pass
                 elif command == Commands.OUT.value:
-                    send(conn, ACKNOWLEDGEMENT)
+                    send(conn, SUCCESS)
                     connected = False
                 elif command == Commands.UDP.value:
                     pass

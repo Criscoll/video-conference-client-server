@@ -2,10 +2,9 @@ from enum import Enum
 
 FORMAT = "utf-8"
 HEADER = 64
-
 DISCONNECTED = "Connection was dropped"
 
-# Authentication messages
+# ------------------ Authentication --------------------
 AUTHENTICATED = "[Authentication] Success"
 ATTEMPTS_EXCEEDED = (
     "[Authentication] Invalid password. Too many attempts made, please try again later"
@@ -19,7 +18,7 @@ BLOCKED = "[Authentication] Your account is blocked due to multiple login failur
 REQUEST_AUTHENTICATION = "[Authentication] Authentication required..."
 
 
-# Text message operation
+# ------------------ COMMANDS --------------------
 class Commands(Enum):
     MSG = "MSG"
     DLT = "DLT"
@@ -30,10 +29,13 @@ class Commands(Enum):
     UDP = "UDP"
 
 
-ACKNOWLEDGEMENT = "OK"
-
-
 INVALID_COMMAND = (
     "[Invalid Input] Please begin your message with one of the outlined commands"
 )
 MISSING_ARGUMENTS = "[Invalid Input] Please include an argument in your MSG command"
+
+SUCCESS = "Command Successfully run"
+# ------------------ DLT Command --------------------
+MSG_NOT_FOUND = "[DLT Err] Unable to find the specified message in the logs"
+
+# ------------------ DLT Command --------------------
