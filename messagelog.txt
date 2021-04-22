@@ -1,0 +1,4 @@
+1; 22 Apr 21 18:36:51; yoda; no longer populating the log; yes
+2; 22 Apr 21 18:34:48; yoda; this is a message; no
+3; 22 Apr 21 18:35:22; yoda; WOW; yes
+4; 22 Apr 21 18:34:59; yoda; THis is a cool message; no

@@ -36,6 +36,6 @@ MISSING_ARGUMENTS = "[Invalid Input] Please include an argument in your MSG comm
 
 SUCCESS = "Command Successfully run"
 # ------------------ DLT Command --------------------
-MSG_NOT_FOUND = "[DLT Err] Unable to find the specified message in the logs"
+MSG_NOT_FOUND = "[Command Err] Unable to find the specified message in the logs"
 
 # ------------------ DLT Command --------------------

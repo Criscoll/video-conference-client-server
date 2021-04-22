@@ -5,4 +5,9 @@ from helpers import *
 from constants import *
 import pickle
 
-delete_message("1", "21 Apr 21 22:00:04", "yoda")
+
+a = "3 21 Feb 2021 16:03:01 this is a message"
+
+args = a.strip().split(" ")
+
+print(" ".join(args[5:]))

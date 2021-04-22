@@ -154,3 +154,46 @@ def delete_message(msg_no, timestamp, username):
 
     except FileNotFoundError:
         print(f"[File Err] Could not find the messagelog.txt")
+
+
+# ------------------ EDT Command --------------------
+def edit_message(msg_no, timestamp, new_msg, username):
+    try:
+        with open("messagelog.txt", "a+") as f:
+            f.seek(0)
+            file_lines = []
+            line_found = False
+
+            # fine the line being referenced, delete it and move all subsequent elements up
+            for line in f:
+                (line_no, line_date, line_user, msg, edited) = line.split(";")
+                line_no = line_no.strip()
+                line_date = line_date.strip()
+                line_user = line_user.strip()
+                msg = msg.strip()
+                edited = edited.strip()
+
+                if (
+                    msg_no == line_no
+                    and timestamp == line_date
+                    and username == line_user
+                ):
+                    line_found = True
+                    file_lines.append(
+                        f"{line_no}; {get_formatted_date()}; {line_user}; {new_msg}; yes\n"
+                    )
+                else:
+                    file_lines.append(line)
+
+            if line_found == False:
+                return MSG_NOT_FOUND
+            else:
+                f.seek(0)
+                f.truncate(0)
+                for line in file_lines:
+                    f.write(line)
+
+                return SUCCESS
+
+    except FileNotFoundError:
+        print(f"[File Err] Could not find the messagelog.txt")

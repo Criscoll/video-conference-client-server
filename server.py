@@ -9,6 +9,7 @@ from helpers import (
     next_message_no,
     log_message,
     delete_message,
+    edit_message,
 )
 from constants import *
 
@@ -103,8 +104,6 @@ def handle_client(conn, addr, seq_no, lock):
         args.pop(0)
         timestamp = " ".join(args)
 
-        print(f"{msg_no} - {timestamp} - {username}")
-
         lock.acquire()
         result = delete_message(msg_no, timestamp, username)
         lock.release()
@@ -112,12 +111,27 @@ def handle_client(conn, addr, seq_no, lock):
         if result == MSG_NOT_FOUND:
             send(conn, MSG_NOT_FOUND)
         else:
-            send(conn, f"Message {msg_no} deleted at {get_formatted_date()}")
+            send(conn, f"Message #{msg_no} deleted at {get_formatted_date()}")
+
+    def handle_edt_command(username, args):
+        if len(args) == 0:
+            send(conn, MISSING_ARGUMENTS)
+            return
+
+        msg_no = args[0].strip("#")
+        timestamp = " ".join(args[1:5])
+        new_msg = " ".join(args[5:])
+
+        lock.acquire()
+        result = edit_message(msg_no, timestamp, new_msg, username)
+        lock.release()
+
+        if result == MSG_NOT_FOUND:
+            send(conn, MSG_NOT_FOUND)
+        else:
+            send(conn, f"Message #{msg_no} edited at {get_formatted_date()}")
 
     def handle_rdm_command():
-        pass
-
-    def handle_edt_command():
         pass
 
     def handle_atu_command():
@@ -158,7 +172,7 @@ def handle_client(conn, addr, seq_no, lock):
                 elif command == Commands.DLT.value:
                     handle_dlt_command(username, args)
                 elif command == Commands.EDT.value:
-                    pass
+                    handle_edt_command(username, args)
                 elif command == Commands.RDM.value:
                     pass
                 elif command == Commands.ATU.value:

@@ -74,7 +74,8 @@ while connected:
         send(client, msg)
         server_msg = recieve(client)
 
-        print(server_msg)
+        if server_msg != SUCCESS:
+            print(server_msg)
 
         if msg == Commands.OUT.value:
             connected = False
