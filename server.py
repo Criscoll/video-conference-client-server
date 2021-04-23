@@ -200,8 +200,6 @@ def handle_client(conn, addr, lock):
                     unlog_disconnected_user(username, addr[0], udp_port)
                     send(conn, SUCCESS)
                     connected = False
-                elif command == Commands.UDP.value:
-                    pass
 
             except socket.error as e:
                 if isinstance(e.args, tuple):
