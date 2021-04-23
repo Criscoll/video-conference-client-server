@@ -18,6 +18,10 @@ BLOCKED = "[Authentication] Your account is blocked due to multiple login failur
 REQUEST_AUTHENTICATION = "[Authentication] Authentication required..."
 
 
+# ------------------ Logging --------------------
+USER_NOT_FOUND = "[Active User Log] Could not find the specified user"
+
+
 # ------------------ COMMANDS --------------------
 class Commands(Enum):
     MSG = "MSG"
@@ -42,3 +46,4 @@ MSG_NOT_FOUND = "[Command Err] Unable to find the specified message in the logs"
 NO_NEW_MSG = "[RDM] There are no new messages after this timestamp"
 
 DATE_FORMAT_ERROR = "[RDM] Incorrect format for date provided"
+

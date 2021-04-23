@@ -12,6 +12,8 @@ from helpers import (
     delete_message,
     edit_message,
     read_messages,
+    log_active_user,
+    unlog_disconnected_user,
 )
 from constants import *
 
@@ -72,15 +74,7 @@ def handle_authentication(conn, addr):
 # off the client to their own thread where any interaction with the server is handled.
 # This should handle any asynchronous behaviour as each client is essentially handed their
 # own little environment to make requests within. Most client handling is done here
-def handle_client(conn, addr, seq_no, lock):
-    # when a user is authenticated, log their info in userlog.txt
-    def log_user_activity(udp_port):
-        lock.acquire()
-        with open("userlog.txt", "a") as wf:
-            date = get_formatted_date()
-            wf.write(f"{seq_no}; {date}; {addr[0]}; {udp_port}\n")
-        lock.release()
-
+def handle_client(conn, addr, lock):
     def handle_msg_command(username, args):
         if len(args) == 0:
             send(conn, MISSING_ARGUMENTS)
@@ -163,7 +157,9 @@ def handle_client(conn, addr, seq_no, lock):
     # client is authenticated and may begin interacting with the server
     else:
         udp_port = recieve(conn)
-        log_user_activity(udp_port)
+        lock.acquire()
+        log_active_user(username, addr[0], udp_port)  # log active user
+        lock.release()
 
         print(f"[NEW CONNECTION] {addr} connected.")
 
@@ -175,6 +171,7 @@ def handle_client(conn, addr, seq_no, lock):
 
                 if msg == DISCONNECTED:
                     print("[Disconnected] Client disconnected remotely")
+                    unlog_disconnected_user(username, addr[0], udp_port)
                     conn.close()
                     return
 
@@ -193,6 +190,7 @@ def handle_client(conn, addr, seq_no, lock):
                 elif command == Commands.ATU.value:
                     pass
                 elif command == Commands.OUT.value:
+                    unlog_disconnected_user(username, addr[0], udp_port)
                     send(conn, SUCCESS)
                     connected = False
                 elif command == Commands.UDP.value:
@@ -224,10 +222,7 @@ def start():
         while True:
             conn, addr = server_socket.accept()
             lock = threading.Lock()
-            seq_no = threading.activeCount() - 1
-            thread = threading.Thread(
-                target=handle_client, args=(conn, addr, seq_no, lock)
-            )
+            thread = threading.Thread(target=handle_client, args=(conn, addr, lock))
             thread.start()
             print(f"[ACTIVE CONNECTIONS] {threading.activeCount() - 1}")
     except socket.error:

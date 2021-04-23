@@ -31,6 +31,25 @@ def is_later_than(formatted_input_date, formatted_logged_date):
     return logged_date > input_date
 
 
+def next_active_seq_no():
+    try:
+        last_seq_no = 1
+        with open("userlog.txt", "a+") as f:
+            f.seek(0)
+
+            for last_line in f:
+                pass
+
+            last_seq_no = last_line.split(" ")[0].strip(";")
+            last_seq_no = str(int(last_seq_no) + 1)
+
+    except FileNotFoundError:
+        print(f"[File Err] Could not find the userlog.txt")
+        last_seq_no = 1
+    finally:
+        return last_seq_no
+
+
 # ------------------ TCP Transmission --------------------
 
 
@@ -102,6 +121,65 @@ def update_blocked_timestamps(time_blocked_map, ip):
             print(f"[Pickle] Successfully pickled timestamp of blocked user - {ip}")
         except EOFError as e:
             print(f"[Pickle Error] Could not update blocked timestamps - {e}")
+
+
+def log_active_user(username, addr, udp_port):
+    try:
+        seq_no = next_active_seq_no()
+        with open("userlog.txt", "a+") as wf:
+            date = get_formatted_date()
+            wf.write(f"{seq_no}; {date}; {username}; {addr}; {udp_port}\n")
+    except FileNotFoundError:
+        pass
+
+
+def unlog_disconnected_user(username, addr, udp_port):
+    try:
+        with open("userlog.txt", "a+") as f:
+            f.seek(0)
+            file_lines = []
+            line_found = False
+
+            # fine the line being referenced, delete it and move all subsequent elements up
+            for line in f:
+                (line_no, line_date, line_user, line_ip, line_udp_port) = line.split(
+                    ";"
+                )
+                line_no = line_no.strip()
+                line_date = line_date.strip()
+                line_user = line_user.strip()
+                line_ip = line_ip.strip()
+                line_udp_port = line_udp_port.strip()
+
+                if line_found == False:
+                    if (
+                        username == line_user
+                        and addr == line_ip
+                        and udp_port == line_udp_port
+                    ):
+                        line_found = True
+                    else:
+                        file_lines.append(line)
+
+                # line with users arguments was found
+                else:
+                    line_no = str(int(line_no) - 1)
+                    file_lines.append(
+                        f"{line_no}; {line_date}; {line_user}; {line_ip}; {line_udp_port}\n"
+                    )
+
+            if line_found == False:
+                return USER_NOT_FOUND
+            else:
+                f.seek(0)
+                f.truncate(0)
+                for line in file_lines:
+                    f.write(line)
+
+                return SUCCESS
+
+    except FileNotFoundError:
+        pass
 
 
 # ------------------ MSG Command --------------------
