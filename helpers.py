@@ -24,8 +24,11 @@ def get_time_since(date):
     return (date_obj - date).total_seconds()
 
 
-def is_later_than(formatted_date_1, formatted_date_2): 
+def is_later_than(formatted_input_date, formatted_logged_date):
+    input_date = datetime.datetime.strptime(formatted_input_date, "%d %b %y %H:%M:%S")
+    logged_date = datetime.datetime.strptime(formatted_logged_date, "%d %b %y %H:%M:%S")
 
+    return logged_date > input_date
 
 
 # ------------------ TCP Transmission --------------------
@@ -42,8 +45,29 @@ def recieve(conn):
         return DISCONNECTED
 
 
+def recieve_pickle(conn):
+    msg_length = conn.recv(HEADER).decode(FORMAT)
+
+    if msg_length:
+        msg_length = int(msg_length)
+        data = conn.recv(msg_length)
+        msg = pickle.loads(data)
+        return msg
+    else:
+        return DISCONNECTED
+
+
 def send(socket, msg):
     message = msg.encode(FORMAT)
+    msg_length = len(message)
+    send_length = str(msg_length).encode(FORMAT)
+    send_length += b" " * (HEADER - len(send_length))
+    socket.send(send_length)
+    socket.send(message)
+
+
+def send_pickle(socket, data):
+    message = pickle.dumps(data)
     msg_length = len(message)
     send_length = str(msg_length).encode(FORMAT)
     send_length += b" " * (HEADER - len(send_length))
@@ -210,21 +234,15 @@ def read_messages(timestamp):
             f.seek(0)
             messages = []
 
-            # fine the line being referenced, delete it and move all subsequent elements up
             for line in f:
-                time = line.split(";")[1:5]
+                logged_date = line.split(";")[1].strip()
+                if is_later_than(timestamp, logged_date):
+                    messages.append(line)
 
-                if 
-
-            if line_found == False:
-                return MSG_NOT_FOUND
-            else:
-                f.seek(0)
-                f.truncate(0)
-                for line in file_lines:
-                    f.write(line)
-
-                return SUCCESS
+            return messages
 
     except FileNotFoundError:
         print(f"[File Err] Could not find the messagelog.txt")
+    except ValueError:
+        return DATE_FORMAT_ERROR
+

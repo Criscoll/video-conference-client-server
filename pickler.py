@@ -2,16 +2,16 @@
 # this should be deleted prior to submitting
 import datetime
 
-# from helpers import *
+from helpers import read_messages
 from constants import *
 import pickle
 
 
-a = "3 21 Feb 2021 16:03:01 this is a message"
+timestamp = "22 Apr 21 01:35:20"
 
 
-date_obj = datetime.datetime.strptime("3 Feb 21 05:40:20", "%d %b %y %H:%M:%S")
+messages = read_messages(timestamp)
 
 
-print(date_obj)
+print(messages)
 

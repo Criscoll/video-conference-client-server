@@ -1,5 +1,5 @@
-import socket, errno, sys
-from helpers import send, recieve
+import socket, errno, sys, pickle
+from helpers import send, recieve, recieve_pickle
 from constants import *
 
 
@@ -71,13 +71,19 @@ while connected:
         msg = input(
             "Enter one of the following commands (MSG, DLT, EDT, RDM, ATU, OUT): "
         )
+        command = msg.split(" ")[0].strip()
         send(client, msg)
         server_msg = recieve(client)
 
         if server_msg != SUCCESS:
             print(server_msg)
+        elif command == Commands.RDM.value:
+            messages = recieve_pickle(client)
+            for message in messages:
+                (msg_no, date, user, msg, edited) = message.strip().split(";")
+                print(f'> #{msg_no}; {user}: "{msg}" posted at {date}.')
 
-        if msg == Commands.OUT.value:
+        elif command == Commands.OUT.value:
             connected = False
 
     except socket.error as e:

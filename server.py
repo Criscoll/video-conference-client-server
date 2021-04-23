@@ -2,6 +2,7 @@ import socket, threading, sys, time, errno, pickle
 from helpers import (
     send,
     recieve,
+    send_pickle,
     get_formatted_date,
     get_blocked_timestamps,
     update_blocked_timestamps,
@@ -138,7 +139,15 @@ def handle_client(conn, addr, seq_no, lock):
             return
 
         timestamp = " ".join(args)
-        result = read_messages(timestamp)
+        messages = read_messages(timestamp)
+
+        if messages == DATE_FORMAT_ERROR:
+            send(conn, DATE_FORMAT_ERROR)
+        elif len(messages) == 0:
+            send(conn, NO_NEW_MSG)
+        else:
+            send(conn, SUCCESS)
+            send_pickle(conn, messages)
 
     def handle_atu_command():
         pass

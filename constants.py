@@ -40,3 +40,5 @@ MSG_NOT_FOUND = "[Command Err] Unable to find the specified message in the logs"
 
 # ------------------ RDM Command --------------------
 NO_NEW_MSG = "[RDM] There are no new messages after this timestamp"
+
+DATE_FORMAT_ERROR = "[RDM] Incorrect format for date provided"
