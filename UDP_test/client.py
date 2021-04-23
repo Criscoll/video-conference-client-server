@@ -63,17 +63,15 @@ def login():
 
 
 def client_UDP_sender(addr, udp_port, filename):
-    user_address = (addr.strip(), int(udp_port))
+    user_address = (addr, udp_port)
 
     try:
         with open(filename, "rb") as f:
-            client_UDP_sender_socket.sendto(filename.encode(FORMAT), user_address)
+            client_UDP_sender_socket.sendto(f"{filename}", user_address)
             data = f.read(BUFSIZE)
             while data:
                 client_UDP_sender_socket.sendto(data, user_address)
                 data = f.read(BUFSIZE)
-
-            print(f"Successfully transfered {filename} to {addr}")
 
     except FileNotFoundError:
         print(f'The file "{filename}" does not exist')
@@ -84,23 +82,16 @@ def client_UDP_server():
         client_UDP_receiver_socket.bind(CLIENT_UDP_ADDR)
 
         while True:
-            print("here")
-            (filename, addr) = client_UDP_receiver_socket.recvfrom(BUFSIZE)
-            filename = filename.decode(FORMAT)
-
-            print(filename)
-
-            if stop_threads == True:
-                break
+            filename = client_UDP_receiver_socket.recv(BUFSIZE)
 
             with open(filename, "wb+") as f:
                 data = client_UDP_receiver_socket.recv(BUFSIZE)
                 while data:
                     f.write(data)
-                    client_UDP_receiver_socket.settimeout(2)
                     data = client_UDP_receiver_socket.recv(BUFSIZE)
 
-            print(f"Recieved {filename} from {addr}")
+            if stop_threads == True:
+                break
 
     except socket.error:
         print("[Err] Failed to start the UDP listening server")

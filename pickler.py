@@ -7,11 +7,8 @@ from constants import *
 import pickle
 
 
-timestamp = "22 Apr 21 01:35:20"
+f"this is a test".encode(FORMAT)
 
 
-messages = read_messages(timestamp)
-
-
-print(messages)
+print(f"this is a test".encode(FORMAT).decode(FORMAT))
 
