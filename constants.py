@@ -47,3 +47,6 @@ NO_NEW_MSG = "[RDM] There are no new messages after this timestamp"
 
 DATE_FORMAT_ERROR = "[RDM] Incorrect format for date provided"
 
+
+# ------------------ ATU Command --------------------
+NO_ACTIVE_USERS = "There are currently no active users online"

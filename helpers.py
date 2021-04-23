@@ -324,3 +324,31 @@ def read_messages(timestamp):
     except ValueError:
         return DATE_FORMAT_ERROR
 
+
+# ------------------ ATU Command --------------------
+
+
+def get_active_users(client_username, addr, udp_port):
+    try:
+        with open("userlog.txt", "r") as f:
+            users = []
+
+            for line in f:
+                (_, _, username, ip, line_udp_port) = line.strip().split(";")
+
+                username = username.strip()
+                ip = ip.strip()
+                line_udp_port = line_udp_port.strip()
+
+                if (
+                    username != client_username
+                    or ip != addr
+                    or line_udp_port != udp_port
+                ):
+                    users.append(line)
+
+            return users
+
+    except FileNotFoundError:
+        print(f"[File Err] Could not find the userlog.txt")
+

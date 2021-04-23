@@ -85,6 +85,11 @@ while connected:
 
         elif command == Commands.OUT.value:
             connected = False
+        elif command == Commands.ATU.value:
+            active_users = recieve_pickle(client)
+            for user in active_users:
+                (_, date, user, ip, udp_port) = user.strip().split(";")
+                print(f"> {user}, {ip}, {udp_port}, active since {date}.")
 
     except socket.error as e:
         if isinstance(e.args, tuple):

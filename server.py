@@ -14,6 +14,7 @@ from helpers import (
     read_messages,
     log_active_user,
     unlog_disconnected_user,
+    get_active_users,
 )
 from constants import *
 
@@ -144,7 +145,13 @@ def handle_client(conn, addr, lock):
             send_pickle(conn, messages)
 
     def handle_atu_command():
-        pass
+        active_users = get_active_users(username, addr[0], udp_port)
+
+        if len(active_users) == 0:
+            send(conn, NO_ACTIVE_USERS)
+        else:
+            send(conn, SUCCESS)
+            send_pickle(conn, active_users)
 
     # perform authenticaiton and reject client is they fail
     # Upon failure, the client must wait 10 seconds before re-attempting
@@ -188,7 +195,7 @@ def handle_client(conn, addr, lock):
                 elif command == Commands.RDM.value:
                     handle_rdm_command(args)
                 elif command == Commands.ATU.value:
-                    pass
+                    handle_atu_command()
                 elif command == Commands.OUT.value:
                     unlog_disconnected_user(username, addr[0], udp_port)
                     send(conn, SUCCESS)
