@@ -1,6 +1,7 @@
-import socket, errno, sys, pickle, threading
+import socket, errno, sys, pickle, threading, sys
 from helpers import send, recieve, recieve_pickle
 from constants import *
+from time import sleep
 
 
 SERVER = sys.argv[1]
@@ -8,9 +9,7 @@ SERVER_PORT = int(sys.argv[2])
 UDP_PORT = int(sys.argv[3])
 
 ADDR = (SERVER, SERVER_PORT)
-CLIENT_UDP_SERVER = socket.gethostbyname(
-    socket.gethostname()
-)  # The IP address of the server
+CLIENT_UDP_SERVER = "127.0.0.1"  # The IP address of the UDP server
 CLIENT_UDP_ADDR = (CLIENT_UDP_SERVER, UDP_PORT)
 BUFSIZE = 1024
 
@@ -64,16 +63,19 @@ def login():
 
 def client_UDP_sender(addr, udp_port, filename):
     user_address = (addr.strip(), int(udp_port))
-
     try:
         with open(filename, "rb") as f:
             client_UDP_sender_socket.sendto(filename.encode(FORMAT), user_address)
             data = f.read(BUFSIZE)
             while data:
-                client_UDP_sender_socket.sendto(data, user_address)
+                data_sent = client_UDP_sender_socket.sendto(data, user_address)
+                print(f"Sending data of size {data_sent}...")
                 data = f.read(BUFSIZE)
 
-            print(f"Successfully transfered {filename} to {addr}")
+            sleep(1)
+            global re_prompt
+            print(f" >> Successfully transfered {filename} to {addr}")
+            re_prompt = True
 
     except FileNotFoundError:
         print(f'The file "{filename}" does not exist')
@@ -82,27 +84,29 @@ def client_UDP_sender(addr, udp_port, filename):
 def client_UDP_server():
     try:
         client_UDP_receiver_socket.bind(CLIENT_UDP_ADDR)
-
         while True:
-            print("here")
             (filename, addr) = client_UDP_receiver_socket.recvfrom(BUFSIZE)
-            filename = filename.decode(FORMAT)
-
-            print(filename)
 
             if stop_threads == True:
-                break
+                return
 
-            with open(filename, "wb+") as f:
-                data = client_UDP_receiver_socket.recv(BUFSIZE)
-                while data:
-                    f.write(data)
-                    client_UDP_receiver_socket.settimeout(2)
+            filename = filename.decode(FORMAT)
+
+            try:
+                with open(filename, "wb+") as f:
                     data = client_UDP_receiver_socket.recv(BUFSIZE)
+                    while data:
+                        f.write(data)
+                        client_UDP_receiver_socket.settimeout(2)
+                        data = client_UDP_receiver_socket.recv(BUFSIZE)
+            except (socket.timeout, socket.error):
+                global re_prompt
+                print(f'\n >> Recieved "{filename}" from {addr}')
+                re_prompt = True
+                return
 
-            print(f"Recieved {filename} from {addr}")
-
-    except socket.error:
+    except socket.error as e:
+        print(e)
         print("[Err] Failed to start the UDP listening server")
         sys.exit(1)
 
@@ -140,6 +144,24 @@ def handle_UDP_transfer(msg):
         print(f"{target_user} is offline")
 
 
+def should_re_prompt():
+    global re_prompt
+    global stop_threads
+    while True:
+
+        if stop_threads:
+            break
+
+        if re_prompt:
+            print(
+                "Enter one of the following commands (MSG, DLT, EDT, RDM, ATU, OUT, UDP): ",
+                end="",
+                flush=True,
+            )
+            re_prompt = False
+        sleep(2)
+
+
 # ---------------- Program Entry Point ----------------
 
 connect()
@@ -149,9 +171,14 @@ connected = True
 send(client, str(UDP_PORT))
 
 # create a client side thread to handle incoming UDP packets, runs until client terminates
-stop_threads = False
 client_UDP_server_thread = threading.Thread(target=client_UDP_server)
 client_UDP_server_thread.start()
+
+# periodically checks whether a re-prompt is necessary
+stop_threads = False
+re_prompt = False
+re_prompt_thread = threading.Thread(target=should_re_prompt)
+re_prompt_thread.start()
 
 print(f"Connected successfully to [{SERVER}]")
 
@@ -179,7 +206,7 @@ while connected:
             messages = recieve_pickle(client)
             for message in messages:
                 (msg_no, date, user, msg, edited) = message.strip().split(";")
-                print(f'> #{msg_no}; {user}: "{msg}" posted at {date}.')
+                print(f' > #{msg_no}; {user}: "{msg}" posted at {date}.')
         elif command == Commands.OUT.value:
             connected = False
 
@@ -187,7 +214,7 @@ while connected:
             active_users = recieve_pickle(client)
             for user in active_users:
                 (_, date, user, ip, udp_port) = user.strip().split(";")
-                print(f"> {user}, {ip}, {udp_port}, active since {date}.")
+                print(f" > {user}, {ip}, {udp_port}, active since {date}.")
 
     except socket.error as e:
         if isinstance(e.args, tuple):

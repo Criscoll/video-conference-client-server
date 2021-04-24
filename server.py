@@ -226,6 +226,7 @@ def start():
         print(f"[LISTENING] Server is listening on {SERVER}")
         while True:
             conn, addr = server_socket.accept()
+            print(f"NEW ADDR IS {addr}")
             lock = threading.Lock()
             thread = threading.Thread(target=handle_client, args=(conn, addr, lock))
             thread.start()
