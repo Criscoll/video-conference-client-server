@@ -19,6 +19,14 @@ from helpers import (
 from constants import *
 
 
+# ---------------- server config  ----------------
+if not sys.argv[2].isnumeric() or int(sys.argv[2]) not in [1, 2, 3, 4, 5]:
+    print(
+        f"[Invalid Arguments] Invalid number of allowed failed consecutive attempts: {sys.argv[2]}. The valid value is an integer between 1 and 5"
+    )
+    sys.exit(1)
+
+
 PORT = int(sys.argv[1])  # PORT number
 CONSECUTIVE_FAILS = int(sys.argv[2])  # Number of allowed fails during authentication
 
@@ -29,8 +37,9 @@ ADDR = (SERVER, PORT)  # The endpoint of the server
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # The server socket
 server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
+# ---------------- handle authentication ----------------
 
-# handle_authentication: prompt client for username and password and verify whether
+# prompt client for username and password and verify whether
 # these match with any entries in credentials.txt
 def handle_authentication(conn, addr):
     def verify_credentials(username, password):
@@ -71,7 +80,9 @@ def handle_authentication(conn, addr):
             send(conn, INCORRECT_CREDENTIALS)
 
 
-# handle_client: the moment as client establishes a connection with the server, the server hands
+# ---------------- handle client ----------------
+
+# the moment as client establishes a connection with the server, the server hands
 # off the client to their own thread where any interaction with the server is handled.
 # This should handle any asynchronous behaviour as each client is essentially handed their
 # own little environment to make requests within. Most client handling is done here
@@ -216,8 +227,12 @@ def handle_client(conn, addr, lock):
     print(f"[ACTIVE CONNECTIONS] {threading.activeCount() - 2}")
 
 
-# start: starts running the server and keeps it listening for new incomming connections.
+# ---------------- Start ----------------
+
+# starts running the server and keeps it listening for new incomming connections.
 # any new connections are given their own thread and handed off to handle_client()
+
+
 def start():
     try:
         server_socket.bind(ADDR)
@@ -236,7 +251,8 @@ def start():
         sys.exit(1)
 
 
-# main: entry point of the program
+# ---------------- Program Entry Point ----------------
+
 print("[STARTING] server is starting...")
 start()
 

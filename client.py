@@ -4,24 +4,30 @@ from constants import *
 from time import sleep
 
 
-SERVER = sys.argv[1]
+# ---------------- client config ----------------
+
+BUFSIZE = 1024
+SERVER_IP = sys.argv[1]
 SERVER_PORT = int(sys.argv[2])
 UDP_PORT = int(sys.argv[3])
 
-ADDR = (SERVER, SERVER_PORT)
-CLIENT_UDP_SERVER = "127.0.0.1"  # The IP address of the UDP server
-CLIENT_UDP_ADDR = (CLIENT_UDP_SERVER, UDP_PORT)
-BUFSIZE = 1024
+SERVER_ADDR = (SERVER_IP, SERVER_PORT)
 
+CLIENT_IP = "127.0.0.1"  # The IP address of the UDP server
+CLIENT_UDP_ADDR = (CLIENT_IP, UDP_PORT)
 
+# initialise the required sockets
 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 client_UDP_sender_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 client_UDP_receiver_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
 
+# ---------------- connect ----------------
+
+
 def connect():
     try:
-        client.connect(ADDR)
+        client.connect(SERVER_ADDR)
     except socket.timeout:
         print("[ERR] Connection timeout")
         sys.exit(1)
@@ -30,60 +36,73 @@ def connect():
         sys.exit(1)
 
 
+# ---------------- login ----------------
+
+
 def login():
     try:
         authenticated = False
         server_msg = recieve(client)
 
+        # check if user is currently blocked
         if server_msg == BLOCKED:
             print(server_msg)
             sys.exit(1)
         else:
             print(server_msg)
-            while not authenticated:
-                server_msg = recieve(client)
-                send(client, input(server_msg))  # username
-                server_msg = recieve(client)
-                send(client, input(server_msg))  # password
 
+            # collect user credentials and verify the authentication
+            while not authenticated:
+                server_msg = recieve(client)  # server: enter username
+                send(client, input(server_msg))  # username
+                server_msg = recieve(client)  # server: enter password
+                send(client, input(server_msg))  # password
                 server_msg = recieve(client)
 
                 if server_msg == AUTHENTICATED:
                     authenticated = True
                 elif server_msg == INCORRECT_CREDENTIALS:
-                    print(server_msg)
+                    print(server_msg + "\n")
                 elif server_msg == ATTEMPTS_EXCEEDED:
                     print(server_msg)
                     sys.exit(1)
 
     except:
-        print("[ERR] Login Error")
         sys.exit(1)
 
 
-def client_UDP_sender(addr, udp_port, filename):
+# ---------------- client_UDP_sender ----------------
+
+
+def client_UDP_sender(addr, udp_port, filename, user):
     user_address = (addr.strip(), int(udp_port))
     try:
+        # read in data from the file and continually transfer it to the recipient until finished
         with open(filename, "rb") as f:
             client_UDP_sender_socket.sendto(filename.encode(FORMAT), user_address)
             data = f.read(BUFSIZE)
             while data:
                 data_sent = client_UDP_sender_socket.sendto(data, user_address)
-                print(f"Sending data of size {data_sent}...")
+                print(f"\n  **Sending data chunk of size {data_sent}...")
                 data = f.read(BUFSIZE)
 
-            sleep(1)
+            sleep(1)  # wait before prompting success to ensure the message is seen
             global re_prompt
-            print(f" >> Successfully transfered {filename} to {addr}")
+            print(f"  >> Successfully transfered {filename} to {user} [{addr}]")
             re_prompt = True
 
     except FileNotFoundError:
-        print(f'The file "{filename}" does not exist')
+        print(f'\n  !>> The file "{filename}" does not exist')
+        re_prompt = True
+
+
+# ---------------- client_UDP_server ----------------
 
 
 def client_UDP_server():
     try:
         client_UDP_receiver_socket.bind(CLIENT_UDP_ADDR)
+
         while True:
             (filename, addr) = client_UDP_receiver_socket.recvfrom(BUFSIZE)
 
@@ -99,11 +118,11 @@ def client_UDP_server():
                         f.write(data)
                         client_UDP_receiver_socket.settimeout(2)
                         data = client_UDP_receiver_socket.recv(BUFSIZE)
-            except (socket.timeout, socket.error):
+            except socket.timeout:
+                client_UDP_receiver_socket.settimeout(None)
                 global re_prompt
                 print(f'\n >> Recieved "{filename}" from {addr}')
                 re_prompt = True
-                return
 
     except socket.error as e:
         print(e)
@@ -111,37 +130,41 @@ def client_UDP_server():
         sys.exit(1)
 
 
+# ---------------- handle_udp_transfer ----------------
+
+
 def handle_UDP_transfer(msg):
-    args = msg.strip().split(" ")[1:3]
-    if len(args) != 2:
+    udp_args = msg.strip().split(" ")[1:3]  # get relevant arguments from client msg
+    if len(udp_args) != 2:
         print("[UDP] Invalid set of arguments provided")
         return
 
+    # send an ATU command to retrieve a list of active users from the server
     send(client, "ATU")
     result = recieve(client)
-
     if result != SUCCESS:
         print(result)
         return
-
     active_users = recieve_pickle(client)
 
-    (target_user, filename) = msg.strip().split(" ")[1:3]
-
+    # search for user in ATU list and if found begin transmitting the file to them
+    (target_user, filename) = udp_args
     user_found = False
-
     for user in active_users:
         (_, _, username, ip, udp_port) = user.strip().split(";")
         username = username.strip()
         if username == target_user:
             user_found = True
             client_UDP_sender_thread = threading.Thread(
-                target=client_UDP_sender, args=(ip, udp_port, filename)
+                target=client_UDP_sender, args=(ip, udp_port, filename, target_user)
             )
             client_UDP_sender_thread.start()
 
     if not user_found:
         print(f"{target_user} is offline")
+
+
+# ---------------- should_re_prompt ----------------
 
 
 def should_re_prompt():
@@ -180,12 +203,12 @@ re_prompt = False
 re_prompt_thread = threading.Thread(target=should_re_prompt)
 re_prompt_thread.start()
 
-print(f"Connected successfully to [{SERVER}]")
+print(f"Connected successfully to [{SERVER_IP}]")
 
 while connected:
     try:
         if client.fileno() == -1:
-            print("[Connection Lost] Connection lost with server {SERVER}")
+            print("[Connection Lost] Connection lost with server {SERVER_IP}")
             sys.exit(1)
 
         msg = input(
@@ -230,6 +253,7 @@ while connected:
 stop_threads = True
 
 client_UDP_sender_socket.sendto(b" ", CLIENT_UDP_ADDR)  # to trigger thread recv
-client_UDP_receiver_socket.close()
-print(f"Disconnected from server [{SERVER}]")
+# client_UDP_receiver_socket.close()
+# client_UDP_sender_socket.close()
+print(f"Disconnected from server [{SERVER_IP}]")
 
