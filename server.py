@@ -100,7 +100,6 @@ def handle_client(conn, addr, lock):
         lock.release()
 
         print(f'{username} posted MSG #{msg_no} "{msg}" at {date}.')
-
         send(conn, f"Message #{msg_no} posted at {date}.")
 
     def handle_dlt_command(username, args):
@@ -118,8 +117,10 @@ def handle_client(conn, addr, lock):
 
         if result != SUCCESS:
             send(conn, result)
+            print(f"> {username} attempts to delete message #{msg_no}. Delete fails.")
         else:
             send(conn, f"Message #{msg_no} deleted at {get_formatted_date()}")
+            print(f"> {username} deletes message #{msg_no}")
 
     def handle_edt_command(username, args):
         if len(args) == 0:
@@ -136,8 +137,10 @@ def handle_client(conn, addr, lock):
 
         if result != SUCCESS:
             send(conn, result)
+            print(f"{username} attempts to edit message #{msg_no}. Edit fails.")
         else:
             send(conn, f"Message #{msg_no} edited at {get_formatted_date()}")
+            print(f'> {username} edited MSG #{msg_no} "{new_msg}"')
 
     def handle_rdm_command(args):
         if len(args) == 0:
@@ -149,31 +152,47 @@ def handle_client(conn, addr, lock):
 
         if messages == DATE_FORMAT_ERROR:
             send(conn, DATE_FORMAT_ERROR)
+            print(f"> {username} issues RDM, but provided a wrong date format")
+
         elif len(messages) == 0:
             send(conn, NO_NEW_MSG)
+            print(f"> {username} issues RDM, but there are no new messages to return")
+
         else:
             send(conn, SUCCESS)
             send_pickle(conn, messages)
+            print(f"> {username} issues RDM. ")
+            print(f"> Return messages: ")
 
-    def handle_atu_command():
+            for message in messages:
+                (msg_no, date, user, msg, _) = message.strip().split(";")
+                print(f'  >> #{msg_no}; {user}: "{msg.strip()}" posted at {date}.')
+
+    def handle_atu_command(udp_port):
         active_users = get_active_users(username, addr[0], udp_port)
 
         if len(active_users) == 0:
             send(conn, NO_ACTIVE_USERS)
+            print(f"> {username} issues ATU, but there are not active users")
+
         else:
             send(conn, SUCCESS)
             send_pickle(conn, active_users)
+
+            print(f"> {username} issues ATU")
+            print(f"> Return active users: ")
+
+            for user in active_users:
+                (_, date, user, ip, udp_port) = user.strip().split(";")
+                print(f" >> {user}, {ip}, {udp_port}, active since {date}.")
 
     # perform authenticaiton and reject client is they fail
     # Upon failure, the client must wait 10 seconds before re-attempting
     username = handle_authentication(conn, addr)
     authenticated = True if username else False
 
-    if not authenticated:
-        pass
-
     # client is authenticated and may begin interacting with the server
-    else:
+    if authenticated:
         udp_port = recieve(conn)
         lock.acquire()
         log_active_user(username, addr[0], udp_port)  # log active user
@@ -185,7 +204,7 @@ def handle_client(conn, addr, lock):
         while connected:
             try:
                 msg = recieve(conn)
-                print(f"[{addr}] {msg}")
+                # print(f"[{addr}] {msg}")
 
                 if msg == DISCONNECTED:
                     print("[Disconnected] Client disconnected remotely")
@@ -206,17 +225,18 @@ def handle_client(conn, addr, lock):
                 elif command == Commands.RDM.value:
                     handle_rdm_command(args)
                 elif command == Commands.ATU.value:
-                    handle_atu_command()
+                    handle_atu_command(udp_port)
                 elif command == Commands.OUT.value:
                     unlog_disconnected_user(username, addr[0], udp_port)
                     send(conn, SUCCESS)
                     connected = False
+                    print(f"{username} logout")
 
             except socket.error as e:
                 if isinstance(e.args, tuple):
                     print(f"[Err] {e}")
                     if e.errno == errno.EPIPE:
-                        print("[Err] Client disconnected remotely")
+                        print(f"[Err] Client {username} disconnected remotely")
                         sys.exit(1)
                 else:
                     print("Unknown error")
