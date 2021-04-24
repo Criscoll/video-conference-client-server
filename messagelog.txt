@@ -1,4 +1,0 @@
-1; 24 Apr 21 12:50:16; john; hello yoda!; no
-2; 24 Apr 21 17:47:22; john; old; yes
-3; 24 Apr 21 17:52:01; yoda; test; no
-4; 24 Apr 21 18:05:25; yoda; Hello; no

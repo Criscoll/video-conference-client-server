@@ -104,7 +104,7 @@ def get_blocked_timestamps():
             time_blocked_map = {}
             time_blocked_map = pickle.load(pickle_in)
         except EOFError:
-            print(f"[Pickle Error] pickle file is empty, returning empty dict ")
+            print(f"[Pickle Error] pickle file is empty, creating the file...")
             time_blocked_map = {}
         finally:
             return time_blocked_map

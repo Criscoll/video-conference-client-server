@@ -91,12 +91,13 @@ def client_UDP_sender(addr, udp_port, filename, target_user, sender_user):
             data = f.read(BUFSIZE)
             while data:
                 data_sent = client_UDP_sender_socket.sendto(data, user_address)
-                print(f"\n  **Sending data chunk of size {data_sent}...")
                 data = f.read(BUFSIZE)
 
             sleep(1)  # wait before prompting success to ensure the message is seen
             global re_prompt
-            print(f"  >> Successfully transfered {filename} to {target_user} [{addr}]")
+            print(
+                f"\n >> Successfully transfered {filename} to {target_user} [{addr.strip()}]"
+            )
             re_prompt = True
 
     except FileNotFoundError:
