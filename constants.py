@@ -39,12 +39,12 @@ INVALID_COMMAND = (
 MISSING_ARGUMENTS = "[Invalid Input] Please include an argument in your command"
 
 SUCCESS = "Command Successfully run"
-# ------------------ DLT Command --------------------
-MSG_NOT_FOUND = "[Command Err] Unable to find the specified message in the logs"
-
+# ------------------ DLT and EDT Command --------------------
+MSG_NOT_FOUND = "[Command] Unable to find the specified message in the logs"
+NOT_AUTHORISED_DLT = "[Command] Not authorised to DLT this message"
+NOT_AUTHORISED_EDT = "[Command] Not authorised to EDT this message"
 # ------------------ RDM Command --------------------
 NO_NEW_MSG = "[RDM] There are no new messages after this timestamp"
-
 DATE_FORMAT_ERROR = "[RDM] Incorrect format for date provided"
 
 

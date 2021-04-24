@@ -221,6 +221,7 @@ def delete_message(msg_no, timestamp, username):
             f.seek(0)
             file_lines = []
             line_found = False
+            authorised_to_delete = True
 
             # fine the line being referenced, delete it and move all subsequent elements up
             for line in f:
@@ -232,12 +233,13 @@ def delete_message(msg_no, timestamp, username):
                 edited = edited.strip()
 
                 if line_found == False:
-                    if (
-                        msg_no == line_no
-                        and timestamp == line_date
-                        and username == line_user
-                    ):
-                        line_found = True
+                    if msg_no == line_no and timestamp == line_date:
+
+                        if username == line_user:
+                            line_found = True
+                        else:
+                            authorised_to_delete = False
+                            file_lines.append(line)
                     else:
                         file_lines.append(line)
 
@@ -248,7 +250,9 @@ def delete_message(msg_no, timestamp, username):
                         f"{line_no}; {line_date}; {line_user}; {msg}; {edited}\n"
                     )
 
-            if line_found == False:
+            if authorised_to_delete == False:
+                return NOT_AUTHORISED_DLT
+            elif line_found == False:
                 return MSG_NOT_FOUND
             else:
                 f.seek(0)
@@ -269,7 +273,7 @@ def edit_message(msg_no, timestamp, new_msg, username):
             f.seek(0)
             file_lines = []
             line_found = False
-
+            authorised_to_edit = True
             # fine the line being referenced, delete it and move all subsequent elements up
             for line in f:
                 (line_no, line_date, line_user, msg, edited) = line.split(";")
@@ -279,19 +283,23 @@ def edit_message(msg_no, timestamp, new_msg, username):
                 msg = msg.strip()
                 edited = edited.strip()
 
-                if (
-                    msg_no == line_no
-                    and timestamp == line_date
-                    and username == line_user
-                ):
-                    line_found = True
-                    file_lines.append(
-                        f"{line_no}; {get_formatted_date()}; {line_user}; {new_msg}; yes\n"
-                    )
+                if msg_no == line_no and timestamp == line_date:
+
+                    if username == line_user:
+                        line_found = True
+                        file_lines.append(
+                            f"{line_no}; {get_formatted_date()}; {line_user}; {new_msg}; yes\n"
+                        )
+                    else:
+                        authorised_to_edit = False
+                        file_lines.append(line)
+
                 else:
                     file_lines.append(line)
 
-            if line_found == False:
+            if authorised_to_edit == False:
+                return NOT_AUTHORISED_EDT
+            elif line_found == False:
                 return MSG_NOT_FOUND
             else:
                 f.seek(0)

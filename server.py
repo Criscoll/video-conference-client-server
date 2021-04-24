@@ -116,8 +116,8 @@ def handle_client(conn, addr, lock):
         result = delete_message(msg_no, timestamp, username)
         lock.release()
 
-        if result == MSG_NOT_FOUND:
-            send(conn, MSG_NOT_FOUND)
+        if result != SUCCESS:
+            send(conn, result)
         else:
             send(conn, f"Message #{msg_no} deleted at {get_formatted_date()}")
 
@@ -134,8 +134,8 @@ def handle_client(conn, addr, lock):
         result = edit_message(msg_no, timestamp, new_msg, username)
         lock.release()
 
-        if result == MSG_NOT_FOUND:
-            send(conn, MSG_NOT_FOUND)
+        if result != SUCCESS:
+            send(conn, result)
         else:
             send(conn, f"Message #{msg_no} edited at {get_formatted_date()}")
 

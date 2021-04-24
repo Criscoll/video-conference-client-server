@@ -240,7 +240,7 @@ while connected:
             messages = recieve_pickle(client)
             for message in messages:
                 (msg_no, date, user, msg, edited) = message.strip().split(";")
-                print(f' > #{msg_no}; {user}: "{msg}" posted at {date}.')
+                print(f' > #{msg_no}; {user}: "{msg.strip()}" posted at {date}.')
         elif command == Commands.OUT.value:
             connected = False
 
