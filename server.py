@@ -20,6 +20,8 @@ from constants import *
 
 
 # ---------------- server config  ----------------
+
+# checks if the allowable fails argument is valid.
 if not sys.argv[2].isnumeric() or int(sys.argv[2]) not in [1, 2, 3, 4, 5]:
     print(
         f"[Invalid Arguments] Invalid number of allowed failed consecutive attempts: {sys.argv[2]}. The valid value is an integer between 1 and 5"
@@ -35,7 +37,9 @@ ADDR = (SERVER, PORT)  # The endpoint of the server
 
 
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # The server socket
-server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+server_socket.setsockopt(
+    socket.SOL_SOCKET, socket.SO_REUSEADDR, 1
+)  # server socket config
 
 # ---------------- handle authentication ----------------
 
@@ -51,7 +55,7 @@ def handle_authentication(conn, addr):
 
         return False
 
-    attempts = 0
+    attempts = 0  # keeps track of user login attempts
     authenticated = False
     time_blocked_map = get_blocked_timestamps()
 
@@ -85,7 +89,8 @@ def handle_authentication(conn, addr):
 # the moment as client establishes a connection with the server, the server hands
 # off the client to their own thread where any interaction with the server is handled.
 # This should handle any asynchronous behaviour as each client is essentially handed their
-# own little environment to make requests within. Most client handling is done here
+# own little environment to make requests within. Most client handling is done here and
+# the handle function for each command is defined near the top.
 def handle_client(conn, addr, lock):
     def handle_msg_command(username, args):
         if len(args) == 0:
@@ -212,8 +217,10 @@ def handle_client(conn, addr, lock):
                     conn.close()
                     return
 
+                # retrieve the command and arguments from user message
                 (command, *args) = msg.strip().split(" ")
 
+                # handle user request
                 if command not in Commands.__members__:
                     send(conn, INVALID_COMMAND)
                 elif command == Commands.MSG.value:
@@ -233,6 +240,7 @@ def handle_client(conn, addr, lock):
                     print(f"{username} logout")
 
             except socket.error as e:
+                # handle error if client disconnects without logging out
                 if isinstance(e.args, tuple):
                     print(f"[Err] {e}")
                     if e.errno == errno.EPIPE:
@@ -249,7 +257,7 @@ def handle_client(conn, addr, lock):
 
 # ---------------- Start ----------------
 
-# starts running the server and keeps it listening for new incomming connections.
+# start: starts running the server and keeps it listening for new incomming connections.
 # any new connections are given their own thread and handed off to handle_client()
 
 

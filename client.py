@@ -6,14 +6,15 @@ from time import sleep
 
 # ---------------- client config ----------------
 
-BUFSIZE = 1024
+BUFSIZE = 1024  # UDP transmission buffer size
 SERVER_IP = sys.argv[1]
 SERVER_PORT = int(sys.argv[2])
 UDP_PORT = int(sys.argv[3])
 
 SERVER_ADDR = (SERVER_IP, SERVER_PORT)
 
-CLIENT_IP = "127.0.0.1"  # The IP address of the UDP server
+# CLIENT_IP = "127.0.0.1"  # The IP address of the UDP server
+CLIENT_IP = socket.gethostbyname(socket.gethostname())
 CLIENT_UDP_ADDR = (CLIENT_IP, UDP_PORT)
 
 # initialise the required sockets
@@ -24,7 +25,8 @@ client_UDP_receiver_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
 # ---------------- connect ----------------
 
-
+# connects: attempts to establish a connection with the server.
+# Upon failure prints the appropriate error message.
 def connect():
     try:
         client.connect(SERVER_ADDR)
@@ -38,7 +40,9 @@ def connect():
 
 # ---------------- login ----------------
 
-
+# login: begins the authentication procedure on the client side
+# by listening for server messages and prompting the user for
+# credentials. Upon failure ends the client side application.
 def login():
     try:
         authenticated = False
@@ -80,7 +84,10 @@ def login():
 
 # ---------------- client_UDP_sender ----------------
 
-
+# client_UDP_sender: takes the relevant arguments and begins transmitting
+# data from 'filename' to the target_user. The name of the file is
+# first transmitted so the recipient knows under what name
+# to store the file contents.
 def client_UDP_sender(addr, udp_port, filename, target_user, sender_user):
     user_address = (addr.strip(), int(udp_port))
     try:
@@ -96,7 +103,7 @@ def client_UDP_sender(addr, udp_port, filename, target_user, sender_user):
             sleep(1)  # wait before prompting success to ensure the message is seen
             global re_prompt
             print(
-                f"\n >> Successfully transfered {filename} to {target_user} [{addr.strip()}]"
+                f"\n  >> Successfully transfered {filename} to {target_user} [{addr}]"
             )
             re_prompt = True
 
@@ -107,7 +114,9 @@ def client_UDP_sender(addr, udp_port, filename, target_user, sender_user):
 
 # ---------------- client_UDP_server ----------------
 
-
+# client_UDP_server: continually waits and listens for an incomming
+# UDP transmission in its own thread. Once received, takes the
+# filename and stores the data in a file with the filename.
 def client_UDP_server():
     try:
         client_UDP_receiver_socket.bind(CLIENT_UDP_ADDR)
@@ -143,7 +152,10 @@ def client_UDP_server():
 
 # ---------------- handle_udp_transfer ----------------
 
-
+# handle_UDP_transfer: handles the clients request for a UDP transfer
+# and checks whether the arguments are valid and the user is reachable.
+# If yes then passes on the transmission responsibilities to
+# client_UDP_sender in a seperate thread to prevent blocking.
 def handle_UDP_transfer(msg, sender_username):
     udp_args = msg.strip().split(" ")[1:3]  # get relevant arguments from client msg
     if len(udp_args) != 2:
@@ -178,7 +190,9 @@ def handle_UDP_transfer(msg, sender_username):
 
 # ---------------- should_re_prompt ----------------
 
-
+# should_re_prompt: periodically checks whether the re_prompt global
+# variable has been set. If so, re-prints the prompt for user input
+# on the clients terminal.
 def should_re_prompt():
     global re_prompt
     global stop_threads
@@ -209,7 +223,7 @@ send(client, str(UDP_PORT))
 client_UDP_server_thread = threading.Thread(target=client_UDP_server)
 client_UDP_server_thread.start()
 
-# periodically checks whether a re-prompt is necessary
+# periodically checks whether a re-prompt is necessary, runs until client terminates
 stop_threads = False
 re_prompt = False
 re_prompt_thread = threading.Thread(target=should_re_prompt)
@@ -217,6 +231,9 @@ re_prompt_thread.start()
 
 print(f"Connected successfully to [{SERVER_IP}]")
 
+# continually takes user input and sends the commands and arguments to the
+# server to be handled. Responses from the server are returned and listened
+# to on the client side for the next step.
 while connected:
     try:
         if client.fileno() == -1:
@@ -262,12 +279,12 @@ while connected:
             sys.exit(1)
 
 
-stop_threads = True
-
-client_UDP_sender_socket.sendto(b" ", CLIENT_UDP_ADDR)  # to trigger thread recv
+# readies the client application and its threads for termination
+stop_threads = True  # signals threads to terminate
+client_UDP_sender_socket.sendto(
+    b" ", CLIENT_UDP_ADDR
+)  # triggers thread recv block to allow it to terminate
 client_UDP_sender_socket.sendto(b" ", CLIENT_UDP_ADDR)
 
-# client_UDP_receiver_socket.close()
-# client_UDP_sender_socket.close()
 print(f"Disconnected from server [{SERVER_IP}]")
 

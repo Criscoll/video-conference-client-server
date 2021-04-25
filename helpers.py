@@ -6,6 +6,8 @@ import pickle
 # ------------------ General Helpers --------------------
 
 
+# get_formatted_date: gets the current time upon calling the function in
+# the format day month year hour:minute:second.
 def get_formatted_date():
     date_obj = datetime.datetime.now()
 
@@ -18,12 +20,17 @@ def get_formatted_date():
     return formatted_date
 
 
+# get_time_since: gets the time in seconds between the time at which the
+# function was called and a specific date that is passed in as a parameter
 def get_time_since(date):
     date_obj = datetime.datetime.now()
 
     return (date_obj - date).total_seconds()
 
 
+# is_later_than: is passed in two dates with the same format returned by
+# get_formatted_date and checks whether the second argument date is later
+# than the first
 def is_later_than(formatted_input_date, formatted_logged_date):
     input_date = datetime.datetime.strptime(formatted_input_date, "%d %b %y %H:%M:%S")
     logged_date = datetime.datetime.strptime(formatted_logged_date, "%d %b %y %H:%M:%S")
@@ -31,6 +38,8 @@ def is_later_than(formatted_input_date, formatted_logged_date):
     return logged_date > input_date
 
 
+# next_active_seq_no: checks userlog.txt to return what the next active user's
+# sequence number in the log will be. If empty returns the sequence number of 1
 def next_active_seq_no():
     try:
         last_seq_no = 1
@@ -52,7 +61,10 @@ def next_active_seq_no():
 
 # ------------------ TCP Transmission --------------------
 
-
+# recieve: blocks program execution and waits to receive a TCP message.
+# The function first waits to receive the message length which is a number of bytes as
+# a string which indicates how big the actual message will be. The function then uses
+# this value to know how many bytes to expect in the data of the transmission.
 def recieve(conn):
     msg_length = conn.recv(HEADER).decode(FORMAT)
 
@@ -64,6 +76,8 @@ def recieve(conn):
         return DISCONNECTED
 
 
+# recieve_pickle: behaves similar to receive() except that it is dealing with the
+# transmission of pickled objects rather than strings.
 def recieve_pickle(conn):
     msg_length = conn.recv(HEADER).decode(FORMAT)
 
@@ -76,6 +90,9 @@ def recieve_pickle(conn):
         return DISCONNECTED
 
 
+# send: a partner function to recieve which follows the same rules. The function encodes the message
+# in UTF-8 format and first sends the amount of data that will be transmitted. Then it sends the
+# encoded data to the recipient who will know how much data to expect.
 def send(socket, msg):
     message = msg.encode(FORMAT)
     msg_length = len(message)
@@ -85,6 +102,8 @@ def send(socket, msg):
     socket.send(message)
 
 
+# send_pickle: behaves similar to send() except that it is dealing with the
+# transmission of pickled objects rather than strings.
 def send_pickle(socket, data):
     message = pickle.dumps(data)
     msg_length = len(message)
@@ -96,7 +115,9 @@ def send_pickle(socket, data):
 
 # ------------------ Authentication --------------------
 
-
+# get_blocked_timestamps: returns the hash map stored in
+# blocked_timestamps.pickle which contains users and the last time
+# they were blocked from logging in.
 def get_blocked_timestamps():
     with open("blocked_timestamps.pickle", "a+b") as pickle_in:
         try:
@@ -104,7 +125,7 @@ def get_blocked_timestamps():
             time_blocked_map = {}
             time_blocked_map = pickle.load(pickle_in)
         except EOFError:
-            print(f"[Pickle Error] pickle file is empty, creating the file...")
+            print(f"[Pickle Error] pickle file is empty, returning empty dict ")
             time_blocked_map = {}
         finally:
             return time_blocked_map
@@ -112,6 +133,8 @@ def get_blocked_timestamps():
     return {}
 
 
+# update_blocked_timestamps: stores an updated blocked_timestamps hash_map
+# into blocked_timestamps.pickle.
 def update_blocked_timestamps(time_blocked_map, ip):
     with open("blocked_timestamps.pickle", "wb+") as pickle_out:
         try:
@@ -123,6 +146,8 @@ def update_blocked_timestamps(time_blocked_map, ip):
             print(f"[Pickle Error] Could not update blocked timestamps - {e}")
 
 
+# log_active_user: takes in a user, their address and udp_port and makes
+# an entry for them inside userlog.txt.
 def log_active_user(username, addr, udp_port):
     try:
         seq_no = next_active_seq_no()
@@ -133,6 +158,8 @@ def log_active_user(username, addr, udp_port):
         pass
 
 
+# unlog_disconnected_user: takes in a user, their address and udp_port
+# and removes their entry from userlog.txt.
 def unlog_disconnected_user(username, addr, udp_port):
     try:
         with open("userlog.txt", "a+") as f:
@@ -184,7 +211,8 @@ def unlog_disconnected_user(username, addr, udp_port):
 
 # ------------------ MSG Command --------------------
 
-
+# next_message_no: looks through messagelog.txt and returns the
+# next sequence number for the log. If no messages exist returns 1.
 def next_message_no():
     try:
         last_msg_no = 1
@@ -204,6 +232,8 @@ def next_message_no():
         return last_msg_no
 
 
+# log_message: takes in message information and adds an entry for it in
+# messagelog.txt.
 def log_message(msg_no, date, username, msg, edited):
     try:
         with open("messagelog.txt", "a+") as wf:
@@ -214,7 +244,8 @@ def log_message(msg_no, date, username, msg, edited):
 
 # ------------------ DLT Command --------------------
 
-
+# delete_message: takes in message info and removes that
+# message from the log if authorised to do so.
 def delete_message(msg_no, timestamp, username):
     try:
         with open("messagelog.txt", "a+") as f:
@@ -267,6 +298,9 @@ def delete_message(msg_no, timestamp, username):
 
 
 # ------------------ EDT Command --------------------
+
+# edit_message: takes message info and edits the message content
+# in messagelog.txt if authorised to do so.
 def edit_message(msg_no, timestamp, new_msg, username):
     try:
         with open("messagelog.txt", "a+") as f:
@@ -314,6 +348,10 @@ def edit_message(msg_no, timestamp, new_msg, username):
 
 
 # ------------------ RDM Command --------------------
+
+# read_messages: takes in a timestamp and returns all messages from
+# messagelog.txt that were added / edited after that time. Returns
+# the messages as a list.
 def read_messages(timestamp):
     try:
         with open("messagelog.txt", "r") as f:
@@ -335,7 +373,9 @@ def read_messages(timestamp):
 
 # ------------------ ATU Command --------------------
 
-
+# get_active_users: opens the userlog.txt and returns
+# all the currently active users excluding the one
+# who issued the call as a list.
 def get_active_users(client_username, addr, udp_port):
     try:
         with open("userlog.txt", "r") as f:
